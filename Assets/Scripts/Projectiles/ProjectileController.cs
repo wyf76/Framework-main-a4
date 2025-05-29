@@ -5,53 +5,82 @@ using System.Collections;
 public class ProjectileController : MonoBehaviour
 {
     public float lifetime;
-    public event Action<Hittable,Vector3> OnHit;
+    public event Action<Hittable, Vector3> OnHit;
     public ProjectileMovement movement;
-    
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public bool piercing = false;
+    private bool hasHit = false; // Flag to check if it hit something
+
     void Start()
     {
-        
+        if (movement == null)
+        {
+            movement = GetComponent<ProjectileMovement>();
+            if (movement == null)
+            {
+                Debug.LogWarning("ProjectileController: Missing ProjectileMovement component.");
+            }
+        }
+
+        if (lifetime > 0)
+        {
+            StartCoroutine(Expire());
+        }
     }
 
-    // Update is called once per frame
     void Update()
     {
-        movement.Movement(transform);
+        if (movement != null)
+        {
+            movement.Movement(transform);
+        }
+        else
+        {
+            Debug.LogWarning("ProjectileController: Cannot move projectile, movement is null.");
+        }
     }
-
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("projectile")) return;
+
+        hasHit = true; // Mark that the projectile has hit something
         if (collision.gameObject.CompareTag("unit"))
         {
             var ec = collision.gameObject.GetComponent<EnemyController>();
-            if (ec != null)
+            if (ec != null && OnHit != null)
             {
-                OnHit(ec.hp, transform.position);
+                OnHit.Invoke(ec.hp, transform.position);
             }
             else
             {
                 var pc = collision.gameObject.GetComponent<PlayerController>();
-                if (pc != null)
+                if (pc != null && OnHit != null)
                 {
-                    OnHit(pc.hp, transform.position);
+                    OnHit.Invoke(pc.hp, transform.position);
                 }
             }
-
         }
-        Destroy(gameObject);
+
+        if (!piercing) 
+            Destroy(gameObject);
     }
 
-    public void SetLifetime(float lifetime)
+    public void SetLifetime(float newLifetime)
     {
-        StartCoroutine(Expire(lifetime));
+        lifetime = newLifetime;
+        StopAllCoroutines();
+        if (lifetime > 0)
+            StartCoroutine(Expire());
     }
 
-    IEnumerator Expire(float lifetime)
+    IEnumerator Expire()
     {
         yield return new WaitForSeconds(lifetime);
+        if (!hasHit)
+        {
+            // If lifetime expires and it hasn't hit anything, it's a miss
+            RelicEventBus.SpellMissed();
+        }
         Destroy(gameObject);
     }
 }

@@ -9,21 +9,21 @@ public class Unit : MonoBehaviour
     public float distance;
     public event Action<float> OnMove;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
     // Update is called once per frame
     void FixedUpdate()
     {
+        float movedDistance = movement.magnitude * Time.fixedDeltaTime;
         Move(new Vector2(movement.x, 0) * Time.fixedDeltaTime);
         Move(new Vector2(0, movement.y) * Time.fixedDeltaTime);
-        distance += movement.magnitude*Time.fixedDeltaTime;
+        distance += movedDistance;
+
         if (distance > 0.5f)
         {
             OnMove?.Invoke(distance);
+            if(gameObject.CompareTag("Player")) // Only track distance for the player
+            {
+                RelicEventBus.PlayerMovedDistance(distance);
+            }
             distance = 0;
         }
     }

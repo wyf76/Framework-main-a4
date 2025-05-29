@@ -16,9 +16,16 @@
     {
         "name": "warlock",
         "sprite": 19,
-        "hp": 30,
+        "hp": 50,
         "speed": 7,
         "damage": 10
+    },
+    {
+        "name": "assassin",
+        "sprite": 6,
+        "hp": 15,
+        "speed": 12,
+        "damage": 20
     },
     {
         "name": "wizard",

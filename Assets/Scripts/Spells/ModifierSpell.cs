@@ -1,45 +1,59 @@
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using Newtonsoft.Json.Linq;
 
-public class ModifierSpell : Spell
+public abstract class ModifierSpell : Spell
 {
-    protected Spell inner;
-    private float damageMultiplier = 1f;
-    private float manaMultiplier = 1f;
-    private float cooldownMultiplier = 1f;
-    private float speedMultiplier = 1f;
-    private float manaAdder = 0f;
-    private string overrideTrajectory = null;
+    // The spell we’re wrapping
+    protected readonly Spell inner;
 
-    public ModifierSpell(SpellCaster owner, Spell innerSpell) : base(owner)
+    // Expose it publicly so subclasses can walk the chain
+    public Spell InnerSpell => inner;
+
+    protected ModifierSpell(Spell inner) : base(inner.Owner)
     {
-        this.inner = innerSpell;
+        this.inner = inner;
+        // Initialize modifiers on construction
+        mods = new StatBlock();
+        InjectMods(mods);
+        Debug.Log($"[ModifierSpell] Created {this.GetType().Name} wrapping {inner.DisplayName}");
     }
 
-    public void SetDamageMultiplier(float val) => damageMultiplier = val;
-    public void SetManaMultiplier(float val) => manaMultiplier = val;
-    public void SetCooldownMultiplier(float val) => cooldownMultiplier = val;
-    public void SetSpeedMultiplier(float val) => speedMultiplier = val;
-    public void SetManaAdder(float val) => manaAdder = val;
-    public void SetOverrideTrajectory(string t) => overrideTrajectory = t;
+    public override string DisplayName => $"{inner.DisplayName} {Suffix}";
+    public override int IconIndex => inner.IconIndex;
+    protected abstract string Suffix { get; }
 
-    public override string GetName() => inner.GetName();
-    public override int GetManaCost() => (int)(inner.GetManaCost() * manaMultiplier + manaAdder);
-    public override int GetDamage() => (int)(inner.GetDamage() * damageMultiplier);
-    public override float GetCooldown() => inner.GetCooldown() * cooldownMultiplier;
-    public override int GetIcon() => inner.GetIcon();
-    public override float GetSpeed()
+    // Delegate all base stats to our inner, then let our StatBlock mods apply
+    protected override float BaseDamage => inner.Damage;
+    protected override float BaseMana => inner.Mana;
+    protected override float BaseCooldown => inner.Cooldown;
+    protected override float BaseSpeed => inner.Speed;
+
+    public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
     {
-        return inner.GetSpeed() * speedMultiplier;
-    }
-    public string GetTrajectory()
-    {
-        return overrideTrajectory ?? (inner is BaseSpell bs ? bs.GetTrajectory() : "straight");
+        // If you need the JSON for this modifier itself, parse it here
+        // Then reapply your InjectMods to rebuild mods from scratch
+        mods = new StatBlock();
+        InjectMods(mods);
+
+        Debug.Log($"[ModifierSpell] {GetType().Name} final values - " +
+                  $"Damage: {Damage:F2}, Mana: {Mana:F2}, " +
+                  $"Cooldown: {Cooldown:F2}, Speed: {Speed:F2}");
     }
 
-    public override IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
+    // By default, modifiers just pass through
+    protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        return inner.Cast(where, target, team);
+        yield return ApplyModifierEffect(from, to);
     }
+
+    // Override this in modifiers that need special behavior
+    protected virtual IEnumerator ApplyModifierEffect(Vector3 from, Vector3 to)
+    {
+        yield return inner.TryCast(from, to);
+    }
+
+    // Each modifier injects its own ValueMods here
+    protected abstract void InjectMods(StatBlock mods);
 }

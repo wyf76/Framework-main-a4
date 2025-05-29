@@ -1,5 +1,5 @@
 [
-   {
+   {   
        "name": "Easy",
        "waves": 10,
        "spawns": [
@@ -11,7 +11,7 @@
                 "sequence": [1,2,3],
                 "location": "random"
             },
-            {
+            {   
                 "enemy": "skeleton",
                 "count": "wave 3 /",
                 "hp": "30 wave *",
@@ -23,10 +23,17 @@
                 "count": "wave 5 / 1 wave 5 % - *",
                 "hp": "100 25 wave *",
                 "location": "random bone"
-            }
+            },
+	    {
+  "enemy": "assassin",
+  "count": "wave 4 / 1 +",
+  "hp": "base",
+  "sequence": [1],
+  "location": "random green"
+}       
         ]
    },
-   {
+   {   
        "name": "Medium",
        "waves": 15,
        "spawns": [
@@ -38,7 +45,7 @@
                 "sequence": [1,2,3],
                 "location": "random"
             },
-            {
+            {   
                 "enemy": "skeleton",
                 "count": "wave 2 /",
                 "hp": "25 wave *",
@@ -51,10 +58,17 @@
                 "hp": "75 50 wave *",
                 "damage": "base 10 +",
                 "location": "random bone"
-            }
+            },
+            {
+  "enemy": "assassin",
+  "count": "wave 4 / 1 +",
+  "hp": "base",
+  "sequence": [1],
+  "location": "random green"
+}       
         ]
    },
-   {
+   {   
        "name": "Endless",
        "spawns": [
             {
@@ -65,7 +79,7 @@
                 "sequence": [1,2,3],
                 "location": "random"
             },
-            {
+            {   
                 "enemy": "skeleton",
                 "count": "wave 4 /",
                 "hp": "20 wave *",
@@ -78,7 +92,14 @@
                 "hp": "75 15 wave *",
                 "damage": "base 5 -",
                 "location": "random bone"
-            }
+            },
+            {
+                "enemy": "assassin",
+                "count": "wave 4 / 1 +",
+                "hp": "base",
+                "sequence": [1],
+                "location": "random green"
+            }       
         ]
    }
 ]

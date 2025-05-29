@@ -55,6 +55,48 @@
         }
     },
     {
+        "name": "Arcane Overflow",
+        "sprite": 4,
+        "trigger": {
+            "description": "When a spell misses",
+            "type": "on-miss"
+        },
+        "effect": {
+            "description": "your next spell costs 10 less mana.",
+            "type": "reduce-mana-cost",
+            "amount": "10",
+            "until": "cast-spell"
+        }
+    },
+    {
+        "name": "Momentum",
+        "sprite": 5,
+        "trigger": {
+            "description": "After moving 50 units",
+            "type": "on-move-distance",
+            "amount": "50"
+        },
+        "effect": {
+            "description": "your next spell gains 50 additional spellpower.",
+            "type": "gain-spellpower",
+            "amount": "50",
+            "until": "cast-spell"
+        }
+    },
+    {
+        "name": "Retaliator",
+        "sprite": 6,
+        "trigger": {
+            "description": "When you take damage",
+            "type": "take-damage"
+        },
+        "effect": {
+            "description": "automatically cast your current spell at the attacker (10s cooldown).",
+            "type": "auto-cast-retaliation",
+            "cooldown": "10"
+        }
+    },
+    {
         "name": "Sapphire Idol",
         "sprite": 4,
         "trigger": {
@@ -85,7 +127,7 @@
         "sprite": 6,
         "trigger": {
             "description": "After moving 50 units",
-            "type": "distance-moved",
+            "type": "on-move-distance",
             "amount": "50"
         },
         "effect": {

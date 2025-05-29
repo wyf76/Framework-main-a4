@@ -1,131 +1,24 @@
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
 using UnityEngine;
-
-/// <summary>
-/// Handles loading relic definitions from JSON and building concrete Relic instances at runtime.
-/// </summary>
-public class RelicManager : MonoBehaviour
-{
-    public static Dictionary<string, RelicDefinition> Relics;
-
-    /// <summary>
-    /// Loads relic definitions from Resources/relics.json once and caches them.
-    /// </summary>
-    private static void LoadRelics()
-    {
-        if (Relics != null) return; // Already loaded
-
-        TextAsset relicText = Resources.Load<TextAsset>("relics");
-        if (relicText == null)
-        {
-            Debug.LogError("relics.json not found in Resources");
-            Relics = new Dictionary<string, RelicDefinition>();
-            return;
-        }
-
-        JArray root = JArray.Parse(relicText.text);
-        Relics = new Dictionary<string, RelicDefinition>();
-        foreach (JObject obj in root)
-        {
-            var def = obj.ToObject<RelicDefinition>();
-            if (def == null)
-            {
-                Debug.LogWarning("Failed to parse relic json node: " + obj.ToString());
-                continue;
-            }
-            Relics[def.name] = def;
-        }
-    }
-
-    private void Awake()
-    {
-        // Ensure relic definitions are loaded before anything else tries to use them.
-        LoadRelics();
-    }
-
-    /// <summary>
-    /// Builds a Relic by name. Returns null if the name is unknown.
-    /// </summary>
-    public static Relic BuildRelic(string name)
-    {
-        LoadRelics(); // Safety in case this gets called early.
-
-        if (!Relics.TryGetValue(name, out RelicDefinition def))
-        {
-            Debug.LogWarning($"Relic '{name}' not found");
-            return null;
-        }
-
-        var trigger = BuildTrigger(def.trigger);
-        var effect = BuildEffect(def.effect);
-
-        return new Relic(def.name, def.sprite, trigger, effect);
-    }
-
-    private static RelicTrigger BuildTrigger(RelicTriggerDefinition def)
-    {
-        switch (def.type)
-        {
-            case "take-damage":
-                return new TakeDamageTrigger();
-
-            case "stand-still":
-                if (float.TryParse(def.amount, out float standTime))
-                    return new StandStillTrigger(standTime);
-                Debug.LogWarning($"Invalid amount '{def.amount}' for stand-still trigger");
-                return new StandStillTrigger(0f);
-
-            case "on-kill":
-                return new KillTrigger();
-
-            case "deal-damage":
-                return new DealDamageTrigger();
-
-            case "distance-moved":
-                if (float.TryParse(def.amount, out float distance))
-                    return new DistanceMovedTrigger(distance);
-                Debug.LogWarning($"Invalid amount '{def.amount}' for distance-moved trigger");
-                return new DistanceMovedTrigger(0f);
-
-            default:
-                Debug.LogWarning($"Unknown trigger type '{def.type}', defaulting to take-damage");
-                return new TakeDamageTrigger();
-        }
-    }
-
-    private static RelicEffect BuildEffect(RelicEffectDefinition def)
-    {
-        switch (def.type)
-        {
-            case "gain-mana":
-                return new GainManaEffect(def.amount);
-
-            case "gain-spellpower":
-                return new GainSpellpowerEffect(def.amount, def.until);
-
-            case "heal":
-                return new HealEffect(def.amount);
-
-            default:
-                Debug.LogWarning($"Unknown effect type '{def.type}', defaulting to gain-mana");
-                return new GainManaEffect(def.amount);
-        }
-    }
-}
-
-// ---------- JSON definition structs ----------
+using System.Collections.Generic;
+using System.Linq;
 
 [System.Serializable]
-public class RelicTriggerDefinition
+public class RelicDataList
 {
-    public string description;
-    public string type;
-    public string amount;
+    public RelicData[] relics;
 }
 
 [System.Serializable]
-public class RelicEffectDefinition
+public class RelicData
+{
+    public string name;
+    public int sprite;
+    public TriggerData trigger;
+    public EffectData effect;
+}
+
+[System.Serializable]
+public class TriggerData
 {
     public string description;
     public string type;
@@ -134,10 +27,100 @@ public class RelicEffectDefinition
 }
 
 [System.Serializable]
-public class RelicDefinition
+public class EffectData
 {
-    public string name;
-    public int sprite;
-    public RelicTriggerDefinition trigger;
-    public RelicEffectDefinition effect;
+    public string description;
+    public string type;
+    public string amount;
+    public string until;
+    public string cooldown;
+}
+
+public class RelicManager : MonoBehaviour
+{
+    public static RelicManager I { get; private set; }
+
+    List<Relic> allRelics;
+    List<Relic> owned = new List<Relic>();
+
+    void Awake()
+    {
+        if (I == null)
+        {
+            I = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        LoadRelics();
+        EnemySpawnerController.OnWaveEnd += OnWaveEnd;
+        Debug.Log("RelicManager initialized and subscribed to OnWaveEnd");
+    }
+
+    void LoadRelics()
+    {
+        var txt = Resources.Load<TextAsset>("relics");
+        if (txt == null)
+        {
+            Debug.LogError("Could not find relics.json");
+            return;
+        }
+
+        // relics.json is an array, so wrap it in an object
+        var list = JsonUtility.FromJson<RelicDataList>("{\"relics\":" + txt.text + "}");
+        allRelics = list.relics.Select(d => new Relic(d)).ToList();
+        Debug.Log($"RelicManager loaded {allRelics.Count} relics");
+    }
+
+    void OnWaveEnd(int wave)
+    {
+        Debug.Log($"OnWaveEnd triggered for wave {wave}");
+
+        if (wave % 3 != 0)
+        {
+            Debug.Log($"Wave {wave} is not a relic wave");
+            return;
+        }
+
+        var available = allRelics.Where(r => !owned.Contains(r)).ToList();
+        if (available.Count < 3)
+        {
+            Debug.Log("Not enough relics to choose from");
+            return;
+        }
+
+        var choices = available.OrderBy(_ => Random.value).Take(3).ToArray();
+        if (RewardScreenManager.Instance != null)
+        {
+            Debug.Log("Calling ShowRelics");
+            RewardScreenManager.Instance.ShowRelics(choices);
+        }
+        else
+        {
+            Debug.LogError("RewardScreenManager.Instance is NULL!");
+        }
+    }
+
+    public void PickRelic(Relic r)
+    {
+        if (owned.Contains(r)) return;
+        owned.Add(r);
+        r.Init();
+        Debug.Log($"Picked relic: {r.Name}");
+    }
+
+    [ContextMenu("Force Show Relics")]
+    public void ForceShowRelics()
+    {
+        if (allRelics != null && allRelics.Count > 0)
+        {
+            var choices = allRelics.Take(3).ToArray();
+            Debug.Log($"Force showing {choices.Length} relics");
+            RewardScreenManager.Instance?.ShowRelics(choices);
+        }
+    }
 }

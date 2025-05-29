@@ -1,32 +1,30 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Relic
 {
-    public string name;
-    public int sprite;
-    public RelicTrigger trigger;
-    public RelicEffect effect;
+    public string Name { get; }
+    public int SpriteIndex { get; }
 
-    public Relic(string name, int sprite, RelicTrigger trigger, RelicEffect effect)
+    // expose these so RewardScreenManager can read .description
+    public TriggerData TriggerData { get; }
+    public EffectData EffectData { get; }
+
+    readonly IRelicTrigger trigger;
+    readonly IRelicEffect effect;
+
+    public Relic(RelicData d)
     {
-        this.name = name;
-        this.sprite = sprite;
-        this.trigger = trigger;
-        this.effect = effect;
+        Name = d.name;
+        SpriteIndex = d.sprite;
+
+        TriggerData = d.trigger;
+        EffectData = d.effect;
+
+        trigger = RelicTriggers.Create(d.trigger, this);
+        effect = RelicEffects.Create(d.effect, this);
     }
 
-    public void Register(PlayerController player)
-    {
-        trigger.Register(player, this);
-    }
-
-    public void Activate(PlayerController player)
-    {
-        effect.Apply(player);
-    }
-
-    public void Deactivate(PlayerController player)
-    {
-        effect.Remove(player);
-    }
+    public void Init() => trigger.Subscribe();
+    public void Fire() => effect.Activate();
+    public void End() => effect.Deactivate();
 }

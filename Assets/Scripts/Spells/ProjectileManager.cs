@@ -1,52 +1,35 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 
 public class ProjectileManager : MonoBehaviour
 {
     public GameObject[] projectiles;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         GameManager.Instance.projectileManager = this;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void CreateProjectile(int idx, string traj, Vector3 pos, Vector3 dir, float spd, Action<Hittable,Vector3> onHit, float life=0f)
     {
-        
+        int i = Mathf.Clamp(idx, 0, projectiles.Length-1);
+        var go = Instantiate(projectiles[i], pos + dir.normalized*1.1f,
+                             Quaternion.Euler(0,0,Mathf.Atan2(dir.y,dir.x)*Mathf.Rad2Deg));
+        var mov = MakeMovement(traj, spd);
+        var ctrl= go.GetComponent<ProjectileController>();
+        ctrl.movement = mov;
+        ctrl.OnHit    += onHit;
+        if (life>0) ctrl.SetLifetime(life);
     }
 
-    public void CreateProjectile(int which, string trajectory, Vector3 where, Vector3 direction, float speed, Action<Hittable,Vector3> onHit)
+    private ProjectileMovement MakeMovement(string name, float speed)
     {
-        GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized*1.1f, Quaternion.Euler(0,0,Mathf.Atan2(direction.y, direction.x)*Mathf.Rad2Deg));
-        new_projectile.GetComponent<ProjectileController>().movement = MakeMovement(trajectory, speed);
-        new_projectile.GetComponent<ProjectileController>().OnHit += onHit;
-    }
-
-    public void CreateProjectile(int which, string trajectory, Vector3 where, Vector3 direction, float speed, Action<Hittable, Vector3> onHit, float lifetime)
-    {
-        GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized * 1.1f, Quaternion.Euler(0, 0, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg));
-        new_projectile.GetComponent<ProjectileController>().movement = MakeMovement(trajectory, speed);
-        new_projectile.GetComponent<ProjectileController>().OnHit += onHit;
-        new_projectile.GetComponent<ProjectileController>().SetLifetime(lifetime);
-    }
-
-    public ProjectileMovement MakeMovement(string name, float speed)
-    {
-        if (name == "straight")
+        if (string.IsNullOrEmpty(name)) name = "straight";
+        switch(name.ToLower())
         {
-            return new StraightProjectileMovement(speed);
+            case "homing":    return new HomingProjectileMovement(speed);
+            case "spiraling": return new SpiralingProjectileMovement(speed);
+            default:           return new StraightProjectileMovement(speed);
         }
-        if (name == "homing")
-        {
-            return new HomingProjectileMovement(speed);
-        }
-        if (name == "spiraling")
-        {
-            return new SpiralingProjectileMovement(speed);
-        }
-        return null;
     }
-
 }

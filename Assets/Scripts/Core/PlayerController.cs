@@ -1,84 +1,139 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System.IO;
-using System.Collections.Generic;
 
 public class PlayerController : MonoBehaviour
 {
+    // relic hook
+    public static event Action<Vector3> OnPlayerMove;
+    public int relicMaxHPBonus = 0;
     public Hittable hp;
     public HealthBar healthui;
     public ManaBar manaui;
-
-    public List<Relic> relics = new List<Relic>();
-
     public SpellCaster spellcaster;
-    public SpellUI spellui;
+
+    public SpellUI spellui;   // slot 0
+    public SpellUI spellui2;  // slot 1
+    public SpellUI spellui3;  // slot 2
+    public SpellUI spellui4;  // slot 3
 
     public int speed;
-
     public Unit unit;
 
-    public void AddRelic(Relic relic)
+    void Awake()
     {
-        relics.Add(relic);
-        relic.Register(this);
+        InitializeComponents();
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
     void Start()
     {
-        unit = GetComponent<Unit>();
+        unit = GetComponent<Unit>() ?? gameObject.AddComponent<Unit>();
         GameManager.Instance.player = gameObject;
+    }
+
+    // make public so EnemySpawner can call it
+    public void InitializeComponents()
+    {
+        if (hp == null)
+        {
+            hp = new Hittable(100, Hittable.Team.PLAYER, gameObject);
+            hp.OnDeath += Die;
+        }
+
+        if (spellcaster == null)
+        {
+            spellcaster = GetComponent<SpellCaster>();
+            if (spellcaster == null)
+                spellcaster = gameObject.AddComponent<SpellCaster>();
+            spellcaster.team = Hittable.Team.PLAYER;
+        }
     }
 
     public void StartLevel()
     {
-        spellcaster = new SpellCaster(125, 8, Hittable.Team.PLAYER);
-        StartCoroutine(spellcaster.ManaRegeneration());
+        InitializeComponents();
 
-        hp = new Hittable(100, Hittable.Team.PLAYER, gameObject);
-        hp.OnDeath += Die;
-        hp.team = Hittable.Team.PLAYER;
+        if (healthui != null && hp != null)
+            healthui.SetHealth(hp);
+        if (manaui != null && spellcaster != null)
+            manaui.SetSpellCaster(spellcaster);
 
-        unit.OnMove += dist => EventBus.Instance.PlayerMoved(dist);
-
-        // tell UI elements what to show
-        healthui.SetHealth(hp);
-        manaui.SetSpellCaster(spellcaster);
-        spellui.SetSpell(spellcaster.spell);
-
-        // For demonstration, give player the Green Gem relic by default
-        Relic gem = RelicManager.BuildRelic("Green Gem");
-        if (gem != null) AddRelic(gem);
+        UpdateSpellUI();
     }
 
-    // Update is called once per frame
-    void Update()
+    public void UpdateSpellUI()
     {
+        if (spellcaster == null)
+            return;
 
+        spellui?.SetSpell(spellcaster.spells.Count > 0 ? spellcaster.spells[0] : null);
+        spellui2?.SetSpell(spellcaster.spells.Count > 1 ? spellcaster.spells[1] : null);
+        spellui3?.SetSpell(spellcaster.spells.Count > 2 ? spellcaster.spells[2] : null);
+        spellui4?.SetSpell(spellcaster.spells.Count > 3 ? spellcaster.spells[3] : null);
+
+        ShowOrHideSpellUI();
+    }
+
+    private void ShowOrHideSpellUI()
+    {
+        if (spellcaster == null) return;
+
+        spellui?.gameObject.SetActive(spellcaster.spells.Count > 0 && spellcaster.spells[0] != null);
+        spellui2?.gameObject.SetActive(spellcaster.spells.Count > 1 && spellcaster.spells[1] != null);
+        spellui3?.gameObject.SetActive(spellcaster.spells.Count > 2 && spellcaster.spells[2] != null);
+        spellui4?.gameObject.SetActive(spellcaster.spells.Count > 3 && spellcaster.spells[3] != null);
     }
 
     void OnAttack(InputValue value)
     {
-        if (GameManager.Instance.state == GameManager.GameState.PREGAME || GameManager.Instance.state == GameManager.GameState.GAMEOVER) return;
-        Vector2 mouseScreen = Mouse.current.position.value;
-        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(mouseScreen);
-        mouseWorld.z = 0;
-        StartCoroutine(spellcaster.Cast(transform.position, mouseWorld));
+        if (GameManager.Instance.state == GameManager.GameState.PREGAME ||
+            GameManager.Instance.state == GameManager.GameState.GAMEOVER)
+            return;
+
+        Vector2 ms = Mouse.current.position.ReadValue();
+        Vector3 mw = Camera.main.ScreenToWorldPoint(ms);
+        mw.z = 0;
+
+        for (int i = 0; i < spellcaster.spells.Count; i++)
+        {
+            if (spellcaster.spells[i] != null)
+                StartCoroutine(spellcaster.CastSlot(i, transform.position, mw));
+        }
     }
 
     void OnMove(InputValue value)
     {
-        if (GameManager.Instance.state == GameManager.GameState.PREGAME || GameManager.Instance.state == GameManager.GameState.GAMEOVER) return;
-        unit.movement = value.Get<Vector2>() * speed;
+        if (GameManager.Instance.state == GameManager.GameState.PREGAME ||
+            GameManager.Instance.state == GameManager.GameState.GAMEOVER)
+            return;
+
+        Vector2 mv2 = value.Get<Vector2>() * speed;
+        unit.movement = mv2;
+
+        // fire relic hook
+        OnPlayerMove?.Invoke(new Vector3(mv2.x, mv2.y, 0f));
     }
 
-    void Die()
+
+    public void GainMana(int amount)
+    {
+        if (spellcaster == null) InitializeComponents();
+        spellcaster.mana = Mathf.Min(spellcaster.max_mana, spellcaster.mana + amount);
+        manaui?.SetSpellCaster(spellcaster);
+    }
+
+
+    public void AddSpellPower(int amount)
+    {
+        if (spellcaster == null) InitializeComponents();
+        spellcaster.spellPower += amount;
+    }
+
+    private void Die()
     {
         Debug.Log("You Lost");
+        GameManager.Instance.IsPlayerDead = true;
         GameManager.Instance.state = GameManager.GameState.GAMEOVER;
     }
-
 }

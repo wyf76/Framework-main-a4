@@ -1,118 +1,117 @@
-using System;
+using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
+using Newtonsoft.Json;
 
-public class GameManager : MonoBehaviour
+public class GameManager
 {
-    public enum GameState
-    {
-        PREGAME,
-        INWAVE,
-        WAVEEND,
-        COUNTDOWN,
-        GAMEOVER
-    }
+    public enum GameState { PREGAME, INWAVE, WAVEEND, COUNTDOWN, GAMEOVER }
+
     public GameState state;
-    public int damageDealt;
-    public int damageReceived;
-    public int timeSpent;
     public int countdown;
-    private static GameManager _instance;
+
+    private static GameManager theInstance;
     public static GameManager Instance
     {
         get
         {
-            if (_instance == null)
-            {
-                _instance = FindObjectOfType<GameManager>();
-                if (_instance == null)
-                {
-                    GameObject obj = new GameObject("GameManager");
-                    _instance = obj.AddComponent<GameManager>();
-                }
-            }
-            return _instance;
+            if (theInstance == null)
+                theInstance = new GameManager();
+            return theInstance;
         }
-    }
-
-    private void Awake()
-    {
-        if (_instance != null && _instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        _instance = this;
-        DontDestroyOnLoad(gameObject);
-        enemies = new List<GameObject > ();
     }
 
     public GameObject player;
-    public int currentWave = 1;
-    public string selectedClass = "mage"; //default class
-    public PlayerClass currentClass;
-
-
     public ProjectileManager projectileManager;
     public SpellIconManager spellIconManager;
     public EnemySpriteManager enemySpriteManager;
     public PlayerSpriteManager playerSpriteManager;
     public RelicIconManager relicIconManager;
+    private CharacterClassDefinition selectedClass; 
 
-    private List<GameObject> enemies;
-    public int enemy_count { get { return enemies.Count; } }
+    private readonly List<GameObject> enemies = new List<GameObject>();
+    public int enemy_count => enemies.Count;
+    
+    public List<RelicDefinition> ownedRelics = new List<RelicDefinition>();
 
-    public void AddEnemy(GameObject enemy)
+
+    public List<Enemy> enemyDefs { get; private set; }
+    public List<Level> levelDefs { get; private set; }
+
+    public bool playerWon;
+    public bool IsPlayerDead;
+
+    public int totalEnemiesKilled;
+    public float timeSurvived;
+    public int totalDamageDealt;
+    public int totalDamageTaken;
+    public int wavesCompleted;
+
+    private GameManager()
     {
-        enemies.Add(enemy);
+        var eTxt = Resources.Load<TextAsset>("enemies");
+        if (eTxt == null)
+            Debug.LogError("GameManager: missing enemies.json");
+        else
+            enemyDefs = JsonConvert.DeserializeObject<List<Enemy>>(eTxt.text);
+
+        var lTxt = Resources.Load<TextAsset>("levels");
+        if (lTxt == null)
+            Debug.LogError("GameManager: missing levels.json");
+        else
+            levelDefs = JsonConvert.DeserializeObject<List<Level>>(lTxt.text);
+
+        ResetGame();
     }
+    
+    public void SetSelectedClass(CharacterClassDefinition def) {
+        selectedClass = def;
+    }
+
+    public CharacterClassDefinition GetSelectedClass() {
+        return selectedClass;
+    }
+
+
+    public void ResetGame()
+    {
+        state = GameState.PREGAME;
+        countdown = 0;
+        IsPlayerDead = false;
+        playerWon = false;
+        totalEnemiesKilled = 0;
+        totalDamageDealt = 0;
+        totalDamageTaken = 0;
+        timeSurvived = 0f;
+        wavesCompleted = 0;
+        selectedClass = null; 
+
+        ownedRelics.Clear();
+
+
+        if (player != null)
+            Object.Destroy(player);
+        player = null;
+
+        foreach (var e in enemies.ToList())
+            if (e != null) Object.Destroy(e);
+        enemies.Clear();
+    }
+
+    public void AddEnemy(GameObject enemy) => enemies.Add(enemy);
+
     public void RemoveEnemy(GameObject enemy)
     {
-        enemies.Remove(enemy);
-    }
-
-    public void NextWave()
-    {
-        state = GameState.COUNTDOWN;
-
-        EnemySpawner spawner = UnityEngine.Object.FindAnyObjectByType<EnemySpawner>();
-        if (spawner != null)
-        {
-            CoroutineManager.Instance.Run(spawner.SpawnWave());
-        }
-        else
-        {
-            Debug.LogError("Could not find EnemySpawner.");
-        }
+        if (enemies.Remove(enemy))
+            totalEnemiesKilled++;
     }
 
     public GameObject GetClosestEnemy(Vector3 point)
     {
-        if (enemies == null || enemies.Count == 0) return null;
+        if (enemies.Count == 0) return null;
         if (enemies.Count == 1) return enemies[0];
-        return enemies.Aggregate((a, b) => (a.transform.position - point).sqrMagnitude < (b.transform.position - point).sqrMagnitude ? a : b);
-    }
-
-    private GameManager()
-    {
-        damageDealt = 0;
-        damageReceived = 0;
-        timeSpent = 0;
-        enemies = new List<GameObject>();
-    }
-    public void resetGame()
-    {
-        damageDealt = 0;
-        damageReceived = 0;
-        timeSpent = 0;
-        currentWave = 1;
-        enemies.Clear();
-    }
-    public void SetClass(string className)
-    {
-        selectedClass = className;
-        currentClass = ClassManager.Classes[className];
+        return enemies.Aggregate((a, b) =>
+            (a.transform.position - point).sqrMagnitude < (b.transform.position - point).sqrMagnitude ? a : b);
     }
 }

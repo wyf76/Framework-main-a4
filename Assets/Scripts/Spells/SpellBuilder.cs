@@ -1,153 +1,90 @@
 using UnityEngine;
-using System.IO;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 
 
+// Chooses a base spell and random modifiers based on the current wave.
 
 public class SpellBuilder
 {
-    private Dictionary<string, JObject> spellDefinitions = new();
-    private List<string> baseSpellNames = new();
-    private List<string> modifierNames = new();
+    private readonly Dictionary<string, JObject> catalog;
+    private readonly System.Random rng = new System.Random();
 
+    static readonly string[] BaseKeys     = {"arcane_bolt","arcane_spray","magic_missile","arcane_blast", "knockback_bolt"};
+    static readonly string[] ModifierKeys = {"splitter","doubler","damage_amp","speed_amp","chaos","homing","frost_spike_modifier","vampiric_essence_modifier"};
 
     public SpellBuilder()
     {
-        var spellText = Resources.Load<TextAsset>("spells");
-        if (spellText == null)
-        {
-            Debug.LogError("spells.json not found in Resources.");
-            return;
-        }
-
-        JObject root = JObject.Parse(spellText.text);
-
-        foreach (var pair in root)
-        {
-            string id = pair.Key;
-            JObject def = (JObject)pair.Value;
-
-            bool isBase = def["damage"] != null && def["projectile"] != null;
-
-            spellDefinitions[id] = def;
-
-            if (isBase)
-                baseSpellNames.Add(id);
-            else
-                modifierNames.Add(id);
-        }
+        var ta = Resources.Load<TextAsset>("spells");
+        catalog = ta != null
+            ? JsonConvert.DeserializeObject<Dictionary<string,JObject>>(ta.text)
+            : new Dictionary<string,JObject>();
     }
 
     public Spell Build(SpellCaster owner)
     {
-        // Picks a random base spell
-        string baseName = baseSpellNames[Random.Range(0, baseSpellNames.Count)];
-        JObject baseDef = spellDefinitions[baseName];
+        int wave = GetCurrentWave();
+        var vars = new Dictionary<string,float> { ["power"]=owner.spellPower, ["wave"]=wave };
 
-        BaseSpell baseSpell;
+        if (wave <= 1)
+            return BuildBase(owner, "arcane_bolt", vars);
 
-        if (baseName == "arcane_chain")
-        {
-            baseSpell = new ArcaneChainSpell(owner);
-        }
-        else
-        {
-            baseSpell = new BaseSpell(owner);
-        }
+        // Pick random base
+        int bidx = rng.Next(BaseKeys.Length);
+        Spell s = BuildBase(owner, BaseKeys[bidx], vars);
 
-        baseSpell.name = baseDef["name"]?.ToString();
-        baseSpell.description = baseDef["description"]?.ToString();
-        baseSpell.icon = baseDef["icon"]?.ToObject<int>() ?? 0;
-        baseSpell.damageExpression = baseDef["damage"]?["amount"]?.ToString();
-        baseSpell.manaCostExpression = baseDef["mana_cost"]?.ToString();
-        baseSpell.cooldownExpression = baseDef["cooldown"]?.ToString();
-        baseSpell.projectileSpeedExpression = baseDef["projectile"]?["speed"]?.ToString();
-        baseSpell.trajectory = baseDef["projectile"]?["trajectory"]?.ToString();
-        baseSpell.projectileSprite = baseDef["projectile"]?["sprite"]?.ToObject<int>() ?? 0;
+        // Random number of modifiers
+        int modCount = rng.NextDouble() < 0.3 ? 2 : rng.Next(2);
+        for (int i = 0; i < modCount; i++)
+            s = ApplyModifier(s, ModifierKeys[rng.Next(ModifierKeys.Length)], vars);
 
-        Spell finalSpell = baseSpell;
-
-        // 50% chance to apply SplitterSpell
-        if (Random.value < 0.5f && spellDefinitions.ContainsKey("splitter"))
-        {
-            JObject splitDef = spellDefinitions["splitter"];
-            float angle = EvalFloat(splitDef["angle"]?.ToString(), owner);
-            finalSpell = new SplitterSpell(owner, finalSpell, angle);
-            Debug.Log("→ Applied SplitterSpell");
-        }
-
-        // 25% chance to apply DoublerSpell
-        if (Random.value < 0.25f && spellDefinitions.ContainsKey("doubler"))
-        {
-            JObject doubleDef = spellDefinitions["doubler"];
-            float delay = EvalFloat(doubleDef["delay"]?.ToString(), owner);
-            finalSpell = new DoublerSpell(owner, finalSpell, delay);
-            Debug.Log("→ Applied DoublerSpell");
-        }
-
-        // Apply 0–2 stat-based or behavior modifier layers
-        int modifierCount = Random.Range(0, 3);
-
-        for (int i = 0; i < modifierCount; i++)
-        {
-            string modName = modifierNames[Random.Range(0, modifierNames.Count)];
-            if (modName == "splitter" || modName == "doubler") continue; // already applied
-
-            JObject modDef = spellDefinitions[modName];
-
-            // Handle custom behavior modifier: Piercing
-            if (modName == "piercing")
-            {
-                finalSpell = new PiercingSpell(owner, finalSpell);
-                Debug.Log("→ Applied PiercingSpell");
-                continue;
-            }
-
-            // Handle custom behavior modifier: CheapCast
-            if (modName == "cheap_cast")
-            {
-                finalSpell = new CheapCastSpell(owner, finalSpell);
-                Debug.Log("→ Applied CheapCastSpell");
-                continue;
-            }
-
-            // Default stat-based modifier
-            ModifierSpell mod = new ModifierSpell(owner, finalSpell);
-
-            if (modDef["damage_multiplier"] != null)
-                mod.SetDamageMultiplier(EvalFloat(modDef["damage_multiplier"].ToString(), owner));
-
-            if (modDef["mana_multiplier"] != null)
-                mod.SetManaMultiplier(EvalFloat(modDef["mana_multiplier"].ToString(), owner));
-
-            if (modDef["cooldown_multiplier"] != null)
-                mod.SetCooldownMultiplier(EvalFloat(modDef["cooldown_multiplier"].ToString(), owner));
-
-            if (modDef["speed_multiplier"] != null)
-                mod.SetSpeedMultiplier(EvalFloat(modDef["speed_multiplier"].ToString(), owner));
-
-            if (modDef["mana_adder"] != null)
-                mod.SetManaAdder(EvalFloat(modDef["mana_adder"].ToString(), owner));
-
-            if (modDef["projectile_trajectory"] != null)
-                mod.SetOverrideTrajectory(modDef["projectile_trajectory"].ToString());
-
-            finalSpell = mod;
-            Debug.Log($"→ Applied stat modifier: {modName}");
-        }
-        Debug.Log($"Built spell: {finalSpell.GetName()} (damage: {finalSpell.GetDamage()}, mana: {finalSpell.GetManaCost()})");
-        return finalSpell;
+        return s;
     }
 
-    private float EvalFloat(string expr, SpellCaster owner)
+    public Spell BuildBase(SpellCaster owner, string key, Dictionary<string,float> vars)
     {
-        if (string.IsNullOrEmpty(expr)) return 0f;
-        return RPNEvaluator.Evaluate(expr, new Dictionary<string, float>
+        Spell s = key switch
         {
-            { "power", owner.spellPower },
-            { "wave", GameManager.Instance.currentWave }
-        });
+            "arcane_bolt"     => new ArcaneBolt(owner),
+            "arcane_spray"    => new ArcaneSpray(owner),
+            "magic_missile"   => new MagicMissile(owner),
+            "arcane_blast"    => new ArcaneBlast(owner),
+            "knockback_bolt"  => new KnockbackSpell(owner),  
+            _                 => new ArcaneBolt(owner)
+        };
+
+        if (catalog.TryGetValue(key, out var json))
+            s.LoadAttributes(json, vars);
+
+        return s;
+    }
+
+
+    public Spell ApplyModifier(Spell inner, string mkey, Dictionary<string,float> vars)
+    {
+        Spell mod = mkey switch
+        {
+            "splitter"                 => new Splitter(inner),
+            "doubler"                  => new Doubler(inner),
+            "damage_amp"               => new DamageMagnifier(inner),
+            "speed_amp"                => new SpeedModifier(inner),
+            "chaos"                    => new ChaoticModifier(inner),
+            "homing"                   => new HomingModifier(inner),
+            "vampiric_essence_modifier"=> new VampiricEssenceModifier(inner),
+            "frost_spike_modifier"     => new FrostSpikeModifier(inner),
+            _                          => inner
+        };
+
+        if (catalog.TryGetValue(mkey, out var json))
+            mod.LoadAttributes(json, vars);
+
+        return mod;
+    }
+    private int GetCurrentWave()
+    {
+        var sp = UnityEngine.Object.FindFirstObjectByType<EnemySpawnerController>();
+        return sp != null ? sp.currentWave : 1;
     }
 }
