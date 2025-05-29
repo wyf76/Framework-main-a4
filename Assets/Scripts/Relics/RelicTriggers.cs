@@ -13,6 +13,7 @@ public static class RelicTriggers
     public static IRelicTrigger Create(TriggerData d, Relic r) => d.type switch
     {
         "take-damage" => new DamageTrigger(r),
+        "deal-damage" => new DealDamageTrigger(r), // Ensures "deal-damage" is handled
         "on-kill" => new KillTrigger(r),
         "stand-still" => new StandStillTrigger(r, float.Parse(d.amount)),
         "on-move-distance" => new MoveDistanceTrigger(r, float.Parse(d.amount)),
@@ -28,6 +29,33 @@ public static class RelicTriggers
         void HandleDamage(Vector3 pos, Damage dmg, Hittable target)
         {
             if (target.team == Hittable.Team.PLAYER)
+            {
+                relic.Fire();
+            }
+        }
+
+        public void Subscribe()
+        {
+            EventBus.Instance.OnDamage += HandleDamage;
+        }
+
+        public void Unsubscribe()
+        {
+            EventBus.Instance.OnDamage -= HandleDamage;
+        }
+    }
+
+    // Definition for DealDamageTrigger
+    class DealDamageTrigger : IRelicTrigger
+    {
+        readonly Relic relic;
+        public DealDamageTrigger(Relic r) { relic = r; }
+
+        void HandleDamage(Vector3 pos, Damage dmg, Hittable target)
+        {
+            // Assuming only the player can damage monsters,
+            // so if a monster is hit, it's by the player.
+            if (target.team == Hittable.Team.MONSTERS)
             {
                 relic.Fire();
             }

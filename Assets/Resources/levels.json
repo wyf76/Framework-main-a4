@@ -1,17 +1,17 @@
 [
-   {   
-       "name": "Easy",
-       "waves": 10,
-       "spawns": [
+    {
+        "name": "Easy",
+        "waves": 10,
+        "spawns": [
             {
                 "enemy": "zombie",
                 "count": "5 wave +",
                 "hp": "base 5 wave * +",
                 "delay": "5",
-                "sequence": [1,2,3],
+                "sequence": [1, 2, 3],
                 "location": "random"
             },
-            {   
+            {
                 "enemy": "skeleton",
                 "count": "wave 3 /",
                 "hp": "30 wave *",
@@ -24,28 +24,28 @@
                 "hp": "100 25 wave *",
                 "location": "random bone"
             },
-	    {
-  "enemy": "assassin",
-  "count": "wave 4 / 1 +",
-  "hp": "base",
-  "sequence": [1],
-  "location": "random green"
-}       
+            {
+                "enemy": "assassin",
+                "count": "wave 4 / 1 +",
+                "hp": "base",
+                "sequence": [1],
+                "location": "random green"
+            }
         ]
-   },
-   {   
-       "name": "Medium",
-       "waves": 15,
-       "spawns": [
+    },
+    {
+        "name": "Medium",
+        "waves": 15,
+        "spawns": [
             {
                 "enemy": "zombie",
                 "count": "5 wave 2 * +",
                 "hp": "25 wave *",
                 "delay": "5",
-                "sequence": [1,2,3],
+                "sequence": [1, 2, 3],
                 "location": "random"
             },
-            {   
+            {
                 "enemy": "skeleton",
                 "count": "wave 2 /",
                 "hp": "25 wave *",
@@ -60,26 +60,26 @@
                 "location": "random bone"
             },
             {
-  "enemy": "assassin",
-  "count": "wave 4 / 1 +",
-  "hp": "base",
-  "sequence": [1],
-  "location": "random green"
-}       
+                "enemy": "assassin",
+                "count": "wave 4 / 1 +",
+                "hp": "base",
+                "sequence": [1],
+                "location": "random green"
+            }
         ]
-   },
-   {   
-       "name": "Endless",
-       "spawns": [
+    },
+    {
+        "name": "Endless",
+        "spawns": [
             {
                 "enemy": "zombie",
                 "count": "5 wave 3 * +",
                 "hp": "15 wave *",
                 "delay": "5",
-                "sequence": [1,2,3],
+                "sequence": [1, 2, 3],
                 "location": "random"
             },
-            {   
+            {
                 "enemy": "skeleton",
                 "count": "wave 4 /",
                 "hp": "20 wave *",
@@ -99,7 +99,7 @@
                 "hp": "base",
                 "sequence": [1],
                 "location": "random green"
-            }       
+            }
         ]
-   }
+    }
 ]

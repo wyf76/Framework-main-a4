@@ -28,8 +28,28 @@ public static class RelicEffects
             
         if (d.type == "auto-cast-retaliation")
             return new AutoCastRetaliation(r);
+            
+        if (d.type == "heal") // Ensures "heal" is handled
+            return new HealEffect(int.Parse(d.amount), r.Name);
 
         throw new Exception($"Unknown effect type: {d.type}");
+    }
+
+    // Definition for HealEffect
+    class HealEffect : IRelicEffect
+    {
+        readonly int amt;
+        readonly string relicName;
+        public HealEffect(int a, string name) { amt = a; relicName = name; }
+        public void Activate()
+        {
+            var pc = GameManager.Instance.player.GetComponent<PlayerController>();
+            if(pc != null && pc.hp != null)
+            {
+                pc.hp.Heal(amt);
+            }
+        }
+        public void Deactivate() { } // Heal is a one-time effect
     }
 
     class GainMana : IRelicEffect
@@ -95,15 +115,15 @@ public static class RelicEffects
         {
             if (active) return;
             var vars = new Dictionary<string, int> { { "wave", GameManager.Instance.wavesCompleted } };
-            buffAmt = RPNEvaluator.Evaluate(formula, vars);
-            GameManager.Instance.player.GetComponent<PlayerController>().AddSpellPower(buffAmt);
+            buffAmt = RPNEvaluator.Evaluate(formula, vars); //
+            GameManager.Instance.player.GetComponent<PlayerController>().AddSpellPower(buffAmt); //
             active = true;
         }
 
         public void Deactivate()
         {
             if (!active) return;
-            GameManager.Instance.player.GetComponent<PlayerController>().AddSpellPower(-buffAmt);
+            GameManager.Instance.player.GetComponent<PlayerController>().AddSpellPower(-buffAmt); //
             active = false;
         }
     }
@@ -116,10 +136,10 @@ public static class RelicEffects
 
         public void Activate()
         {
-            PlayerController pc = GameManager.Instance.player.GetComponent<PlayerController>();
+            PlayerController pc = GameManager.Instance.player.GetComponent<PlayerController>(); //
             if (pc != null && pc.spellcaster != null)
             {
-                pc.spellcaster.nextSpellManaDiscount += amt;
+                pc.spellcaster.nextSpellManaDiscount += amt; //
             }
         }
 
@@ -136,26 +156,26 @@ public static class RelicEffects
         {
             ownerRelic = relic;
             // Try to parse the cooldown, default to 10 if it's missing or invalid
-            float.TryParse(relic.EffectData.cooldown, out this.cooldown);
+            float.TryParse(relic.EffectData.cooldown, out this.cooldown); //
             if (this.cooldown <= 0) this.cooldown = 10f;
         }
 
         public void Activate()
         {
             // When the relic is picked up, start listening for damage events.
-            EventBus.Instance.OnDamage += OnPlayerDamaged;
+            EventBus.Instance.OnDamage += OnPlayerDamaged; //
         }
 
         public void Deactivate()
         {
             // When the relic is lost (if that's a feature), stop listening.
-            EventBus.Instance.OnDamage -= OnPlayerDamaged;
+            EventBus.Instance.OnDamage -= OnPlayerDamaged; //
         }
 
         private void OnPlayerDamaged(Vector3 pos, Damage dmg, Hittable target)
         {
             // Check 1: Was the player the one who got hit?
-            if (target.team != Hittable.Team.PLAYER)
+            if (target.team != Hittable.Team.PLAYER) //
             {
                 return;
             }
@@ -167,21 +187,21 @@ public static class RelicEffects
             }
 
             // Check 3: Find a target to retaliate against.
-            GameObject enemyToAttack = GameManager.Instance.GetClosestEnemy(target.owner.transform.position);
+            GameObject enemyToAttack = GameManager.Instance.GetClosestEnemy(target.owner.transform.position); //
             if (enemyToAttack == null)
             {
                 return; // No enemies to retaliate against.
             }
 
             // All checks passed, let's retaliate!
-            Debug.Log($"[RelicEffect] “{ownerRelic.Name}” retaliating against {enemyToAttack.name}");
+            Debug.Log($"[RelicEffect] “{ownerRelic.Name}” retaliating against {enemyToAttack.name}"); //
 
-            var playerController = target.owner.GetComponent<PlayerController>();
+            var playerController = target.owner.GetComponent<PlayerController>(); //
             if (playerController != null && playerController.spellcaster != null)
             {
                 // Cast the first spell (slot 0)
                 playerController.StartCoroutine(
-                    playerController.spellcaster.CastSlot(0, 
+                    playerController.spellcaster.CastSlot(0,  //
                         playerController.transform.position, 
                         enemyToAttack.transform.position
                     )
