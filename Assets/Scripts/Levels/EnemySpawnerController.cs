@@ -50,113 +50,106 @@ public class EnemySpawnerController : MonoBehaviour
     {
         Debug.Log($"[EnemySpawner] StartLevel() called for '{levelname}'");
         level_selector.gameObject.SetActive(false);
-        
-        // Get the selected class from the GameManager
+
+        // 1) Fetch the selected class from GameManager
         selectedClass = GameManager.Instance.GetSelectedClass();
-        if (selectedClass == null) {
-            Debug.LogError("No class selected!");
-            // Fallback to the first available class
-            selectedClass = GameDataLoader.Classes.Values.First();
-        }
-    
-        // --- ADD THE FOLLOWING DEBUG LOGS ---
-        Debug.Log("Attempting to apply class. Selected Class is not null: " + (selectedClass != null));
-        Debug.Log("Player object is not null: " + (GameManager.Instance.player != null));
-        if(selectedClass != null)
+        if (selectedClass == null)
         {
-            Debug.Log("Attempting to apply sprite with index: " + selectedClass.sprite);
-        }
-        // --- END OF ADDED DEBUG LOGS ---
-    if (GameManager.Instance.player != null && selectedClass != null)
-    {
-        Debug.Log("[EnemySpawner] Attempting to get SpriteRenderer from player's children...");
-        // Make sure you are using GetComponentInChildren if the SpriteRenderer is on a child
-        SpriteRenderer playerSpriteRenderer = GameManager.Instance.player.GetComponentInChildren<SpriteRenderer>(); 
-
-        if (playerSpriteRenderer != null)
-        {
-            Debug.Log("[EnemySpawner] Found SpriteRenderer on child object: " + playerSpriteRenderer.gameObject.name);
-            Debug.Log("[EnemySpawner] Sprite on child BEFORE change: " + (playerSpriteRenderer.sprite != null ? playerSpriteRenderer.sprite.name : "null"));
-
-            Sprite newSprite = GameManager.Instance.playerSpriteManager.Get(selectedClass.sprite);
-            if (newSprite != null)
+            Debug.LogError("[EnemySpawner] No class selected! Falling back to first available.");
+            selectedClass = GameDataLoader.Classes.Values.FirstOrDefault();
+            if (selectedClass == null)
             {
-                Debug.Log("[EnemySpawner] Attempting to set new sprite: " + newSprite.name + " (from PlayerSpriteManager index " + selectedClass.sprite + ")");
-                playerSpriteRenderer.sprite = newSprite; // The actual sprite assignment
-                // Check immediately after assignment
-                Debug.Log("[EnemySpawner] Sprite on child AFTER change: " + (playerSpriteRenderer.sprite != null ? playerSpriteRenderer.sprite.name : "null"));
-                
-                if (playerSpriteRenderer.sprite == newSprite) {
-                    Debug.Log("[EnemySpawner] SUCCESS: Sprite assignment was successful in memory.");
-                } else {
-                    Debug.LogWarning("[EnemySpawner] WARNING: Sprite assignment in memory appears to have failed or was immediately overridden.");
-                }
-            }
-            else
-            {
-                Debug.LogWarning("[EnemySpawner] PlayerSpriteManager.Get(" + selectedClass.sprite + ") returned a NULL sprite! Check PlayerSpriteManager setup and the sprite index for this class in classes.json.");
+                Debug.LogError("[EnemySpawner] Still no class found in GameDataLoader.Classes! Aborting StartLevel.");
+                return;
             }
         }
-        else
-        {
-            Debug.LogWarning("[EnemySpawner] GetComponentInChildren<SpriteRenderer>() did NOT find a SpriteRenderer on the player object or any of its children!");
-        }
-    }
-    else
-    {
-        Debug.LogWarning("[EnemySpawner] Player object or SelectedClass is null. Player found: " + (GameManager.Instance.player != null) + ", SelectedClass found: " + (selectedClass != null));
-    }
-        // if (GameManager.Instance.player != null && selectedClass != null)
-        // {
-        //     SpriteRenderer playerSpriteRenderer = GameManager.Instance.player.GetComponentInChildren<SpriteRenderer>();
-        //     if (playerSpriteRenderer != null)
-        //     {
-        //         // Use the sprite index from the class definition to get the correct sprite
-        //         playerSpriteRenderer.sprite = GameManager.Instance.playerSpriteManager.Get(selectedClass.sprite);
-        //     }
-        //     else
-        //     {
-        //         Debug.LogWarning("Player does not have a SpriteRenderer component to change the sprite!");
-        //     }
-        // }
-        
+
+        // 2) Find which LevelDef we want
         currentLevel = GameManager.Instance.levelDefs
             .Find(l => l.name == levelname);
         if (currentLevel == null)
         {
-            Debug.LogError($"StartLevel failed: level '{levelname}' not found.");
+            Debug.LogError($"[EnemySpawner] StartLevel failed: level '{levelname}' not found in levelDefs.");
             return;
         }
 
         currentWave = 1;
 
+        // 3) Ensure that GameManager.Instance.player is assigned
         if (GameManager.Instance.player == null)
         {
-            Debug.LogError("GameManager.Instance.player is null before getting PlayerController!");
+            Debug.LogError("[EnemySpawner] GameManager.Instance.player is null before getting PlayerController!");
             return;
         }
-        Debug.Log($"Getting PlayerController from GameManager.Instance.player: {GameManager.Instance.player.name}", GameManager.Instance.player);
-        var playerController = GameManager.Instance.player.GetComponent<PlayerController>();
 
+        // 4) Grab the PlayerController and call its StartLevel() first
+        var playerController = GameManager.Instance.player.GetComponent<PlayerController>();
         if (playerController == null)
         {
-            Debug.LogError("playerController is null in EnemySpawnerController.StartLevel!");
+            Debug.LogError("[EnemySpawner] playerController is null in EnemySpawnerController.StartLevel!");
             return;
         }
 
+        // This is where PlayerController will do its own setup (spawning, animations, etc.)
         playerController.StartLevel();
 
-        if (GameManager.Instance.player == null)
+        // 5) Now that PlayerController.StartLevel() has run, we can safely swap the player's sprite.
+        //    We do a Find on the child named "player sprite" to guarantee we hit the correct SpriteRenderer.
+        if (GameManager.Instance.player != null && selectedClass != null)
         {
-            Debug.LogError("GameManager.Instance.player is null after calling StartLevel!");
-            return;
-        }
-        Debug.Log($"After calling StartLevel, checking player again: {GameManager.Instance.player.name}", GameManager.Instance.player);
+            SpriteRenderer playerSpriteRenderer = GameManager.Instance.player.transform
+                                                    .Find("player sprite")
+                                                    ?.GetComponent<SpriteRenderer>();
 
-        ScalePlayerForWave(currentWave); 
+            if (playerSpriteRenderer != null)
+            {
+                Debug.Log("[EnemySpawner] Found SpriteRenderer on child: " 
+                        + playerSpriteRenderer.gameObject.name);
+                Debug.Log("[EnemySpawner] Sprite BEFORE change: " 
+                        + (playerSpriteRenderer.sprite != null 
+                            ? playerSpriteRenderer.sprite.name 
+                            : "null"));
+
+                Sprite newSprite = GameManager.Instance.playerSpriteManager.Get(selectedClass.sprite);
+                if (newSprite != null)
+                {
+                    Debug.Log("[EnemySpawner] Assigning new sprite: " 
+                            + newSprite.name 
+                            + " (index " + selectedClass.sprite + ")");
+                    playerSpriteRenderer.sprite = newSprite;
+
+                    Debug.Log("[EnemySpawner] Sprite AFTER change: " 
+                            + (playerSpriteRenderer.sprite != null 
+                                ? playerSpriteRenderer.sprite.name 
+                                : "null"));
+                }
+                else
+                {
+                    Debug.LogWarning("[EnemySpawner] PlayerSpriteManager.Get(" 
+                                    + selectedClass.sprite 
+                                    + ") returned null. Check your index.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[EnemySpawner] Could not find a child named 'player sprite' " +
+                                "or it has no SpriteRenderer component!");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[EnemySpawner] Skipping sprite swap: " +
+                            "player or selectedClass is null. " +
+                            "Player exists: " + (GameManager.Instance.player != null) + 
+                            ", selectedClass exists: " + (selectedClass != null));
+        }
+
+        // 6) After sprite swap, do the usual wave setup
+        ScalePlayerForWave(currentWave);
 
         StartCoroutine(SpawnWave());
     }
+
 
     public void NextWave()
     {
