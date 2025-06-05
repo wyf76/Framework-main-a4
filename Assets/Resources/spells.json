@@ -190,5 +190,22 @@
     "cheap_cast": {
         "name": "cheap cast",
         "description": "Reduces mana cost by 50%."
+    },
+    "heal": {
+        "name": "Heal",
+        "icon": 0,
+        "heal_amount": "20",
+        "mana_cost": "10",
+        "cooldown": "5",
+        "range": "5"
+    },
+    "speed_buff": {
+        "name": "Haste",
+        "icon": 1,
+        "duration": "3",
+        "multiplier": "1.5",
+        "mana_cost": "15",
+        "cooldown": "8",
+        "range": "5"
     }
 }

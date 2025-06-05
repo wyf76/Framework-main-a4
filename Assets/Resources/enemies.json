@@ -18,7 +18,9 @@
         "sprite": 19,
         "hp": 50,
         "speed": 7,
-        "damage": 10
+        "damage": 10,
+        "spell": "speed_buff",
+        "spell_range": 6
     },
     {
         "name": "assassin",
@@ -32,6 +34,8 @@
         "sprite": 4,
         "hp": 25,
         "speed": 6,
-        "damage": 15
+        "damage": 15,
+        "spell": "heal",
+        "spell_range": 6
     }
 ]

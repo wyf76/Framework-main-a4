@@ -23,6 +23,8 @@ public class Enemy
     public int hp;         // base health
     public float speed;    // base move speed
     public int damage;     // base damage
+    public string spell;   // optional spell key
+    public float spell_range;
 }
 
 [System.Serializable]

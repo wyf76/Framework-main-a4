@@ -51,7 +51,9 @@ public class SpellBuilder
             "arcane_spray"    => new ArcaneSpray(owner),
             "magic_missile"   => new MagicMissile(owner),
             "arcane_blast"    => new ArcaneBlast(owner),
-            "knockback_bolt"  => new KnockbackSpell(owner),  
+            "knockback_bolt"  => new KnockbackSpell(owner),
+            "heal"            => new HealSpell(owner),
+            "speed_buff"      => new SpeedBuffSpell(owner),
             _                 => new ArcaneBolt(owner)
         };
 

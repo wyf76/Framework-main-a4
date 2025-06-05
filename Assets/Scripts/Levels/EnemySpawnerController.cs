@@ -242,8 +242,12 @@ public class EnemySpawnerController : MonoBehaviour
                   .sprite = GameManager.Instance.enemySpriteManager.Get(baseEnemy.sprite);
 
                 var en = go.GetComponent<EnemyController>();
+                en.enemyType = baseEnemy.name;
                 en.hp = new Hittable(hp, Hittable.Team.MONSTERS, go);
                 en.speed = (int)speed;
+                en.damage = damage;
+                en.spellKey = baseEnemy.spell;
+                en.spellRange = baseEnemy.spell_range > 0 ? baseEnemy.spell_range : en.spellRange;
 
                 en.hp.OnDeath += () => OnEnemyKilled?.Invoke(go);
 

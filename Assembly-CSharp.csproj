@@ -135,6 +135,8 @@
     <Compile Include="Assets\Scripts\Movement\Unit.cs" />
     <Compile Include="Assets\Scripts\Relics\RelicEffects.cs" />
     <Compile Include="Assets\Scripts\Spells\ProjectileManager.cs" />
+    <Compile Include="Assets\Scripts\Spells\HealSpell.cs" />
+    <Compile Include="Assets\Scripts\Spells\SpeedBuffSpell.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
