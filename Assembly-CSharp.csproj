@@ -106,6 +106,7 @@
     <Compile Include="Assets\Scripts\Projectiles\ProjectileController.cs" />
     <Compile Include="Assets\Scripts\Relics\Relic.cs" />
     <Compile Include="Assets\Scripts\DamageSystem\Damage.cs" />
+    <Compile Include="Assets\Scripts\UI\MainMenuController.cs" />
     <Compile Include="Assets\Scripts\UI\ClassSelector.cs" />
     <Compile Include="Assets\Scripts\Levels\SpawnPoint.cs" />
     <Compile Include="Assets\Scripts\Data\GameData.cs" />
@@ -126,6 +127,7 @@
     <Compile Include="Assets\Scripts\Core\PlayerController.cs" />
     <Compile Include="Assets\Scripts\Spells\DamageMagnifier.cs" />
     <Compile Include="Assets\Scripts\Spells\ValueMod.cs" />
+    <Compile Include="Assets\Scripts\UI\SettingsController.cs" />
     <Compile Include="Assets\Scripts\UI\MuteButton.cs" />
     <Compile Include="Assets\Scripts\Spells\Splitter.cs" />
     <Compile Include="Assets\Scripts\Spells\SpeedBuffSpell.cs" />
