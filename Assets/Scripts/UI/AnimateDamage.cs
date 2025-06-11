@@ -23,7 +23,7 @@ public class AnimateDamage : MonoBehaviour
         this.color_f = color_f;
         this.fadeDuration = duration;
     }
-
+    
     void Start()
     {
         fadeStartTime = Time.time;
@@ -31,7 +31,7 @@ public class AnimateDamage : MonoBehaviour
         timeoffset = Random.value;
     }
 
-
+    
     void Update()
     {
         float progress = (Time.time - fadeStartTime) / fadeDuration;

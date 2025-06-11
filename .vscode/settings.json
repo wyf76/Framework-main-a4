@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Framework-main.sln"
+    "dotnet.defaultSolution": "Framework-main-a4.sln"
 }
