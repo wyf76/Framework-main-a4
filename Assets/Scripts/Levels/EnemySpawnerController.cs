@@ -23,6 +23,18 @@ public class EnemySpawnerController : MonoBehaviour
     private bool waveInProgress = false;
     private CharacterClassDefinition selectedClass; // Store the selected class
 
+    void Awake()
+    {
+        Debug.Log("[EnemySpawner] Awake() called - Game State: " + GameManager.Instance.state);
+        
+        // Ensure game is in PREGAME state
+        if (GameManager.Instance.state != GameManager.GameState.PREGAME)
+        {
+            Debug.LogWarning("[EnemySpawner] Game not in PREGAME state! Resetting...");
+            GameManager.Instance.ResetGame();
+        }
+    }
+
     private void TriggerWin()
     {
         GameManager.Instance.playerWon = true;
@@ -33,6 +45,24 @@ public class EnemySpawnerController : MonoBehaviour
 
     void Start()
     {
+        // Ensure the main menu panel is visible at start
+        if (mainMenuPanel != null)
+        {
+            mainMenuPanel.SetActive(true);
+            Debug.Log("[EnemySpawner] MainMenuPanel activated at start");
+        }
+        else
+        {
+            Debug.LogWarning("[EnemySpawner] MainMenuPanel is null! Make sure it's assigned in the Inspector");
+        }
+        
+        // Ensure the level selector is visible at start
+        if (level_selector != null && level_selector.gameObject != null)
+        {
+            level_selector.gameObject.SetActive(true);
+            Debug.Log("[EnemySpawner] Level selector activated at start");
+        }
+        
         foreach (var lvl in GameManager.Instance.levelDefs)
         {
             GameObject selector = Instantiate(button, level_selector.transform);

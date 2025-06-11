@@ -13,6 +13,10 @@ public class ClassSelector : MonoBehaviour
 
     void Start()
     {
+        // Ensure this GameObject is active
+        gameObject.SetActive(true);
+        Debug.Log("[ClassSelector] GameObject activated at start");
+        
         classDefs = GameDataLoader.Classes;
 
         // Clear the options that might be set in the editor
