@@ -187,6 +187,22 @@ public class EnemySpawnerController : MonoBehaviour
             StartCoroutine(SpawnWave());
     }
 
+    public void SpawnEnemiesInRoom(string locationTag)
+    {
+        StartCoroutine(SpawnRoomEnemies(locationTag));
+    }
+
+    private IEnumerator SpawnRoomEnemies(string locationTag)
+    {
+        var roomSpawns = currentLevel.spawns
+            .Where(s => s.location.ToUpper().Contains(locationTag.ToUpper()))
+            .ToList();
+
+        int totalSpawned = 0;
+        foreach (var spawn in roomSpawns)
+            yield return StartCoroutine(SpawnEnemies(spawn, c => totalSpawned += c));
+    }
+
     IEnumerator SpawnWave()
     {
         if (waveInProgress) yield break;

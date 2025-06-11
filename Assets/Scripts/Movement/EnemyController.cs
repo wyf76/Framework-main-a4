@@ -2,12 +2,17 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+
 // Controls enemy behavior: movement toward player, attacks, health, and slow effects.
 public class EnemyController : MonoBehaviour
 {
+
     [Header("Combat")]
     public int damage;
     public float attackCooldown = 2f;
+
+    public Collider2D roomBounds;
+
     public SpellCaster spellcaster;
     public string spellKey;
     public float spellRange = 6f;
@@ -54,10 +59,30 @@ public class EnemyController : MonoBehaviour
 
         if (enemyType == "zombie")
             currentSpeed *= 1.5f;
+
+        if (roomBounds == null)
+        {
+            Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, 0.1f);
+            foreach (var hit in hits)
+            {
+                if (hit.CompareTag("RoomBounds"))
+                {
+                    roomBounds = hit;
+                    break;
+                }
+            }
+        }
     }
 
     protected virtual void Update()
     {
+
+        if (roomBounds != null && !roomBounds.bounds.Contains(playerTransform.position))
+        {
+            GetComponent<Unit>().movement = Vector2.zero;
+            return; // Skip the rest of the Update
+        }
+
         Vector3 direction = GetMoveDirection();
 
         if (!string.IsNullOrEmpty(spellKey) && spellcaster != null && direction.magnitude <= spellRange)

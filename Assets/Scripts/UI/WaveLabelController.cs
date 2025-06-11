@@ -16,6 +16,7 @@ public class WaveLabelController : MonoBehaviour
         if (GameManager.Instance.state == GameManager.GameState.INWAVE)
         {
             tmp.text = "Enemies left: " + GameManager.Instance.enemy_count;
+            tmp.text = "After killing the enemies, follow the arrow to go to the next level";
         }
         if (GameManager.Instance.state == GameManager.GameState.COUNTDOWN)
         {

@@ -91,11 +91,11 @@ public class RewardScreenManager : MonoBehaviour
         var state = GameManager.Instance.state;
         if (state == prevState) return;
 
-        if (state == GameManager.GameState.WAVEEND)
-        {
-            if (rewardCoroutine != null) StopCoroutine(rewardCoroutine);
-            rewardCoroutine = StartCoroutine(ShowRewardScreen());
-        }
+        //if (state == GameManager.GameState.WAVEEND)
+        //{
+        //  if (rewardCoroutine != null) StopCoroutine(rewardCoroutine);
+        //rewardCoroutine = StartCoroutine(ShowRewardScreen());
+        //}
         else
         {
             rewardUI?.SetActive(false);
@@ -135,7 +135,7 @@ public class RewardScreenManager : MonoBehaviour
         // only offer relics on wave 3, 6, 9, …
         // if (completedWave % 3 == 0)
         // {
-            ShowRelicReward();
+        ShowRelicReward();
         // }
 
         // finally, show the full UI
@@ -272,7 +272,7 @@ public class RewardScreenManager : MonoBehaviour
             GameManager.Instance.player?.GetComponent<PlayerController>()?.UpdateSpellUI();
     }
 
-    void OnNextWaveClicked()
+    public void OnNextWaveClicked()
     {
         rewardUI?.SetActive(false);
         relicPanel?.SetActive(false);
@@ -463,5 +463,13 @@ public class RewardScreenManager : MonoBehaviour
     public List<Relic> GetOwnedRelics()
     {
         return new List<Relic>(ownedRelics);
+    }
+    
+    public void ShowRewardScreenPublic()
+    {
+        if (rewardCoroutine != null)
+            StopCoroutine(rewardCoroutine);
+
+        rewardCoroutine = StartCoroutine(ShowRewardScreen());
     }
 }
