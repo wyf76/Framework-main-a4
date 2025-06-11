@@ -35,7 +35,7 @@
     },
     {
         "name": "Medium",
-        "waves": 15,
+        "waves": 10,
         "spawns": [
             {
                 "enemy": "zombie",

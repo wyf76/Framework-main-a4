@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6121702002466829456}
   - component: {fileID: 2010808718909050836}
   - component: {fileID: 3641830926235763761}
-  m_Layer: 3
+  m_Layer: 6
   m_Name: Enemy
   m_TagString: unit
   m_Icon: {fileID: 0}
@@ -106,7 +106,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   damage: 0
   attackCooldown: 2
-  roomBounds: {fileID: 0}
   spellcaster: {fileID: 0}
   spellKey: 
   spellRange: 6
@@ -212,7 +211,7 @@ GameObject:
   - component: {fileID: 6985111942642092071}
   - component: {fileID: 2050508090476603219}
   - component: {fileID: 7326907792581316403}
-  m_Layer: 3
+  m_Layer: 6
   m_Name: healthbar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -313,7 +312,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2220948256260259858}
   - component: {fileID: 6459498431303712383}
-  m_Layer: 3
+  m_Layer: 6
   m_Name: fg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
