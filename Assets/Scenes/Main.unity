@@ -1305,7 +1305,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 730, y: 300}
+  m_AnchoredPosition: {x: -444.88, y: 264.63}
   m_SizeDelta: {x: 200, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &208824958
@@ -1320,6 +1320,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b0453bc05c2b454c84ceb639665c921, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  muteButtonText: {fileID: 1533042663}
 --- !u!114 &208824959
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1363,7 +1364,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 208824960}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 208824958}
+        m_TargetAssemblyTypeName: MuteButton, Assembly-CSharp
+        m_MethodName: ToggleMute
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &208824960
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5523,13 +5536,13 @@ MonoBehaviour:
   m_MultiSelect: 0
   m_Options:
     m_Options:
-    - m_Text: Option A
+    - m_Text: Mage
       m_Image: {fileID: 325875113, guid: e0ba5a7a2ca92e643ad58fc85d241001, type: 3}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
-    - m_Text: Option B
+    - m_Text: Warlock
       m_Image: {fileID: -398682297, guid: e0ba5a7a2ca92e643ad58fc85d241001, type: 3}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
-    - m_Text: Option C
+    - m_Text: Battlemage
       m_Image: {fileID: -844905941, guid: e0ba5a7a2ca92e643ad58fc85d241001, type: 3}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_OnValueChanged:
@@ -71630,7 +71643,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Option A
+  m_text: Mage
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

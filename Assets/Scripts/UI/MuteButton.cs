@@ -1,28 +1,35 @@
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
 
 public class MuteButton : MonoBehaviour
 {
-    private Button button;
-    private Text buttonText;
+    [SerializeField] 
+    private TextMeshProUGUI muteButtonText;  
 
-    void Start()
+    private void Awake()
     {
-        button = GetComponent<Button>();
-        buttonText = GetComponentInChildren<Text>();
+        if (muteButtonText == null)
+        {
+            muteButtonText = GetComponentInChildren<TextMeshProUGUI>();
+            if (muteButtonText == null)
+                Debug.LogError($"[{name}] MuteButton: no TextMeshProUGUI found!");
+        }
+    }
 
-        button.onClick.AddListener(ToggleAudio);
+    private void Start()
+    {
         UpdateText();
     }
 
-    void ToggleAudio()
+    public void ToggleMute()
     {
-        AudioManager.Instance.ToggleMute();
+        AudioListener.volume = (AudioListener.volume == 0f) ? 1f : 0f;
         UpdateText();
     }
 
-    void UpdateText()
+    private void UpdateText()
     {
-        buttonText.text = AudioManager.Instance.IsMuted() ? "Unmute" : "Mute";
+        if (muteButtonText == null) return;
+        muteButtonText.text = (AudioListener.volume == 0f) ? "Unmute" : "Mute";
     }
 }
